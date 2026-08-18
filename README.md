@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <p align="center">
   <img src="frontend/public/images/nti-logo.png" height="100"/>
   &nbsp;&nbsp;&nbsp;&nbsp;
@@ -543,3 +544,6 @@ The repository is organized by microservice.
 ```
 
 ---
+=======
+# CloudDevOpsProject
+>>>>>>> 507db55b0772eca81d21b5c83abfe19fe2bc1bcc

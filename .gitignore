@@ -1,0 +1,9 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# OS generated files
+.DS_Store
+Thumbs.db
