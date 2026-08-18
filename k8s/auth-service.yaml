@@ -10,6 +10,8 @@ spec:
       app: auth-service
   template:
     metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "ivolve/simplest"
       labels:
         app: auth-service
     spec:
