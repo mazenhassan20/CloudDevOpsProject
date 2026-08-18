@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: ivolveacrproj123.azurecr.io/auth-service:fd6acc02f2d206e842274097ef164f4f1ff6572f
+        image: ivolveacrproj123.azurecr.io/auth-service:b87d75f3e8cd6885d3f56e1e2494d0b26da88f0d
         ports:
         - containerPort: 5000
         envFrom:
