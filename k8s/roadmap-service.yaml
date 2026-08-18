@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: roadmap-service
-        image: ivolveacrproj123.azurecr.io/roadmap-service:latest
+        image: ivolveacrproj123.azurecr.io/roadmap-service:fd6acc02f2d206e842274097ef164f4f1ff6572f
         ports:
         - containerPort: 8080
 ---
