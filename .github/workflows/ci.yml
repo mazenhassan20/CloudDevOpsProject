@@ -1,0 +1,70 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'terraform/**'
+      - 'k8s/**'
+      - 'README.md'
+
+jobs:
+  build-scan-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login --name ivolveacrproj123
+
+      # 1. Auth Service
+      - name: Build Auth Service
+        run: docker build -t ivolveacrproj123.azurecr.io/auth-service:latest ./auth-service
+
+      - name: Run Trivy Scan on Auth Service
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ivolveacrproj123.azurecr.io/auth-service:latest'
+          format: 'table'
+          exit-code: '0' 
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Auth Service
+        run: docker push ivolveacrproj123.azurecr.io/auth-service:latest
+
+      # 2. Roadmap Service
+      - name: Build Roadmap Service
+        run: docker build -t ivolveacrproj123.azurecr.io/roadmap-service:latest ./roadmap-service
+
+      - name: Run Trivy Scan on Roadmap Service
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ivolveacrproj123.azurecr.io/roadmap-service:latest'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Roadmap Service
+        run: docker push ivolveacrproj123.azurecr.io/roadmap-service:latest
+
+      # 3. Frontend Service
+      - name: Build Frontend Service
+        run: docker build -t ivolveacrproj123.azurecr.io/frontend:latest ./frontend
+
+      - name: Run Trivy Scan on Frontend Service
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ivolveacrproj123.azurecr.io/frontend:latest'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Frontend Service
+        run: docker push ivolveacrproj123.azurecr.io/frontend:latest
