@@ -1,549 +1,345 @@
-<<<<<<< HEAD
-<p align="center">
-  <img src="frontend/public/images/nti-logo.png" height="100"/>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="frontend/public/images/ivolve-logo.png" height="100"/>
-</p>
+# 🚀 CloudDevOpsProject
+### Production-Grade Microservices Platform on Azure — Terraform · AKS · GitOps · DevSecOps
 
-<h1 align="center" style="font-family: 'Poppins', sans-serif; color: #e0e0e0; font-size: 2.8rem;">
-   DevOps Project
-</h1>
-
-<h3 align="center" style="font-family: 'Poppins', sans-serif; color: #b0bec5;">
-  In Collaboration with iVolve Technologies
-</h3>
-
-<p align="center" style="max-width: 700px; font-size: 1.1rem; color: #cfd8dc;">
-  This project represents the culmination of the DevOps training at the National Telecommunication Institute (NTI),
-  in partnership with iVolve Technologies. 
-</p>
+> A self-driven, end-to-end DevOps engineering project: taking a 3-tier microservices application from a local Docker Compose stack to a fully automated, secured, and observable deployment on **Azure Kubernetes Service (AKS)** — built and hardened entirely from scratch, on my own initiative, as a hands-on demonstration of production DevOps/Cloud practices.
 
 ---
 
-A simple microservices-based web application designed as a DevOps practice project. The application provides user registration and authentication, followed by a main DevOps Roadmap page after successful login. The project is implemented using multiple microservices, with each service responsible for a specific part of the application. The application is containerized using Docker. Each microservice contains its own `Dockerfile` and can be built and deployed independently.
+## 📖 Table of Contents
+
+- [Overview](#-overview)
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
+- [Repository Structure](#-repository-structure)
+- [Services](#-services)
+- [Infrastructure (Terraform)](#-infrastructure-terraform)
+- [Security](#-security)
+- [CI Pipeline (GitHub Actions)](#-ci-pipeline-github-actions)
+- [CD / GitOps (ArgoCD)](#-cd--gitops-argocd)
+- [Observability Stack](#-observability-stack)
+- [Local Development](#-local-development)
+- [Deployment Guide](#-deployment-guide)
+- [Screenshots / Proof of Work](#-screenshots--proof-of-work)
+- [Engineering Challenges & Fixes](#-engineering-challenges--fixes)
+- [Roadmap / Future Improvements](#-roadmap--future-improvements)
+- [Author](#-author)
 
 ---
 
-## 1. Architecture
+## 🧭 Overview
 
-The application follows a microservices architecture consisting of:
+This project rebuilds a 3-tier microservices application (**Frontend**, **Auth Service**, **Roadmap Service**, **MySQL**) with a production-grade cloud-native platform around it. The original reference application/task used AWS + Jenkins — this implementation was independently redesigned and re-engineered to run on **Azure**, using **GitHub Actions** instead of Jenkins, with additional security and observability layers that go beyond the original scope, built purely for personal learning and portfolio purposes.
 
-* **Frontend Service** – Provides the web interface and handles user interaction.
-* **Auth Service** – Handles user registration and login.
-* **Roadmap Service** – Provides the DevOps Roadmap/main application functionality.
-* **MySQL** – Stores user account information.
+**What this project demonstrates:**
 
-### High-Level Architecture
-
-```text
-                         ┌─────────────────────┐
-                         │       Browser       │
-                         └──────────┬──────────┘
-                                    │
-                                    │ HTTP
-                                    ▼
-                         ┌─────────────────────┐
-                         │   Frontend Service  │
-                         │      Node.js        │
-                         └──────────┬──────────┘
-                                    │
-                         ┌──────────┴──────────┐
-                         │                     │
-                         │ HTTP                │ HTTP
-                         ▼                     ▼
-                ┌─────────────────┐   ┌──────────────────┐
-                │   Auth Service  │   │ Roadmap Service  │
-                │      Java       │   │     Python       │
-                └────────┬────────┘   └──────────────────┘
-                         │                      
-                         │                      
-                         ▼                      
-                ┌─────────────────┐   
-                │      MySQL      │   
-                └─────────────────┘   
-```
+- Infrastructure as Code with modular, reusable Terraform on Azure
+- Secure secrets management with Azure Key Vault (no plaintext credentials, anywhere)
+- A real CI pipeline: build → vulnerability scan → push → manifest update
+- GitOps-based continuous deployment with ArgoCD (auto-sync + self-heal)
+- A full observability stack: metrics, logs, and (in-progress) distributed tracing
+- Container hardening: non-root users, multi-stage builds, minimal base images
 
 ---
 
-## 2. Services
+## 🏗 Architecture
 
-The project contains three application microservices.
-
-| Service         | Technology              | Responsibility                                 |
-| --------------- | ------------------------ | ----------------------------------------------- |
-| Frontend        | Node.js / Express / EJS  | Web UI and communication with backend services |
-| Auth Service    | Java                      | User registration and authentication           |
-| Roadmap Service | Python                    | DevOps roadmap/application data                |
-
-The databases are external dependencies of the microservices.
-
-| Database       | Type       | Used By         | Purpose                         |
-| -------------- | ---------- | ---------------- | -------------------------------- |
-| MySQL          | Relational | Auth Service     | Stores registered users         |
-
----
-
-## 3. Frontend Service
-
-The frontend is responsible for providing the user interface.
-
-It contains two main pages:
-
-### Authentication Page
-
-Users can:
-
-* Create an account
-* Log in
-* Submit their credentials to the Auth Service
-
-### Roadmap Page
-
-After successful authentication, the user is redirected to the main application page containing the DevOps Roadmap.
-
-### Technology
-
-* Node.js
-* Express.js
-* EJS
-* HTML
-* CSS
-
-### Directory Structure
-
-```text
-frontend/
-├── Dockerfile
-├── package.json
-├── server.js
-├── public/
-│   ├── css/
-│   │   └── style.css
-│   └── images/
-│       ├── ivolve-logo.png
-│       └── nti-logo.png
-└── views/
-    ├── auth.ejs
-    ├── error.ejs
-    └── roadmap.ejs
 ```
+                                   ┌────────────────────────┐
+                                   │      GitHub Repo        │
+                                   │  (source + k8s + IaC)   │
+                                   └───────────┬──────────────┘
+                                               │ push
+                                               ▼
+                                   ┌────────────────────────┐
+                                   │   GitHub Actions (CI)   │
+                                   │  Build → Trivy → Push   │
+                                   │   → Update k8s tags     │
+                                   └───────────┬──────────────┘
+                                               │ image push
+                                               ▼
+                                   ┌────────────────────────┐
+                                   │   Azure Container       │
+                                   │   Registry (ACR)        │
+                                   └───────────┬──────────────┘
+                                               │ pull (AcrPull role)
+                                               ▼
+ ┌──────────────┐   watches k8s/   ┌────────────────────────────────────────────┐
+ │   ArgoCD     │◄─────────────────│         Azure Kubernetes Service (AKS)      │
+ │  (GitOps)    │   auto-sync      │                                             │
+ └──────────────┘                  │   ┌─────────────┐   ┌──────────────────┐   │
+                                    │   │  Ingress    │──▶│    Frontend       │   │
+                                    │   │  (NGINX)    │   │   (Node.js)       │   │
+                                    │   └─────────────┘   └────────┬──────────┘   │
+                                    │                                │            │
+                                    │                    ┌───────────┴──────────┐ │
+                                    │                    ▼                       ▼ │
+                                    │         ┌─────────────────┐   ┌──────────────────┐
+                                    │         │  Auth Service    │   │ Roadmap Service   │
+                                    │         │  (Python/Flask)  │   │  (Java/Spring)    │
+                                    │         └────────┬─────────┘   └──────────────────┘
+                                    │                    │                              │
+                                    │                    ▼                              │
+                                    │         ┌─────────────────────┐                   │
+                                    │         │  MySQL (StatefulSet)│                   │
+                                    │         │  + Headless Service  │                  │
+                                    │         └──────────┬───────────┘                  │
+                                    │                    │ password via CSI Driver      │
+                                    │                    ▼                              │
+                                    │         ┌─────────────────────┐                   │
+                                    │         │  Azure Key Vault     │                   │
+                                    │         └─────────────────────┘                   │
+                                    └────────────────────────────────────────────┘
 
-### Port
-
-```text
-Frontend: 3000
-```
-
-The frontend listens for incoming HTTP requests on the configured port.
-
-### Environment Variables
-
-The frontend requires the following environment variables:
-
-```text
-AUTH_SERVICE_URL=<AUTH_SERVICE_URL>
-ROADMAP_SERVICE_URL=<ROADMAP_SERVICE_URL>
-```
-
-Example:
-
-```text
-AUTH_SERVICE_URL=http://auth-service:<AUTH_SERVICE_PORT>
-ROADMAP_SERVICE_URL=http://roadmap-service:<ROADMAP_SERVICE_PORT>
-```
-
-> The actual values should be provided through the deployment environment.
-
----
-
-## 4. Auth Service
-
-The Auth Service is responsible for user authentication and account management.
-
-It handles:
-
-* User registration
-* User login
-* Credential validation
-* Password storage
-* Communication with MySQL
-
-The Auth Service is the **only service that communicates directly with the MySQL database** for user account information.
-
-### Responsibilities
-
-```text
-Signup
-   │
-   ▼
-Auth Service
-   │
-   ▼
-MySQL
-   │
-   ▼
-User Created
-```
-
-For login:
-
-```text
-User
- │
- ▼
-Frontend
- │
- ▼
-Auth Service
- │
- ▼
-MySQL
- │
- ▼
-Credentials Validated
-```
-
-### Technology
-
-* Java
-* Spring Boot
-* MySQL
-
-### Port
-
-```text
-Auth Service: 5000
-```
-
-### Environment Variables
-
-The Auth Service requires database connection information.
-
-```text
-DB_HOST=<MYSQL_HOST>
-DB_PORT=<MYSQL_PORT>
-DB_NAME=<MYSQL_DATABASE>
-DB_USERNAME=<MYSQL_USERNAME>
-DB_PASSWORD=<MYSQL_PASSWORD>
-```
-
-Example:
-
-```text
-DB_HOST=mysql
-DB_PORT=3306
-DB_NAME=ivolve
-DB_USERNAME=ibrahim
-DB_PASSWORD=pass@123
+     ┌───────────────────────────── Observability (namespace: monitoring) ─────────────────────────────┐
+     │   Prometheus  ──▶  Grafana  ◀──  Loki + Promtail   │   Jaeger (tracing UI — instrumentation WIP)  │
+     └────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5. Roadmap Service
+## 🛠 Tech Stack
 
-The Roadmap Service provides the data and functionality used by the main DevOps Roadmap page.
-
-It is separated from the authentication functionality so that roadmap/application functionality can be developed and deployed independently from user authentication.
-
-### Responsibilities
-
-* Provide roadmap data
-* Process roadmap-related requests
-* Return roadmap information to the frontend
-
-### Technology
-
-* Python
-* Flask/FastAPI
-
-### Port
-
-```text
-Roadmap Service: 8080
-```
+| Layer               | Technology                                              |
+|----------------------|----------------------------------------------------------|
+| Cloud Provider        | Microsoft Azure                                          |
+| IaC                   | Terraform (modular: network / acr / aks)                |
+| Container Registry     | Azure Container Registry (ACR)                          |
+| Orchestration          | Azure Kubernetes Service (AKS) — 2 worker nodes          |
+| Secrets Management     | Azure Key Vault + Secrets Store CSI Driver               |
+| CI                     | GitHub Actions                                            |
+| Security Scanning       | Trivy (image vulnerability scanning)                     |
+| CD / GitOps             | ArgoCD (auto-sync, self-heal, pruning)                    |
+| Ingress                 | NGINX Ingress Controller                                  |
+| Metrics                 | Prometheus + kube-state-metrics + node-exporter           |
+| Dashboards               | Grafana                                                    |
+| Log Aggregation           | Loki + Promtail                                            |
+| Distributed Tracing        | Jaeger (OpenTelemetry auto-instrumentation — in progress)  |
+| Backend Services            | Node.js (Frontend), Python/Flask (Auth), Java/Spring (Roadmap) |
+| Database                     | MySQL 8.0 (StatefulSet + Azure Disk-backed persistent storage) |
+| Local Dev                     | Docker Compose                                              |
 
 ---
 
-## 6. Database Architecture
+## 📂 Repository Structure
 
-The application uses MySQL to store user information.
-
-The Auth Service communicates directly with MySQL.
-
-**Database**
-
-```text
-ivolve
 ```
-
-**Table**
-
-```text
-users
-```
-
-**User Information**
-
-The user database contains information such as:
-
-```text
-username
-password_hash
-```
----
-
-## 7. Service Communication
-
-The frontend acts as the entry point for users.
-
-Backend communication follows this model:
-
-```text
-Browser
-   │
-   ▼
-Frontend
-   │
-   ├──────────────► Auth Service ─────────────► MySQL
-   │
-   └──────────────► Roadmap Service
-```
-
-The frontend does not communicate directly with the databases.
-
-This provides separation between:
-
-* User interface
-* Authentication
-* Application functionality
-* Data storage
-
----
-
-## 8. Authentication Flow
-
-### User Registration
-
-```text
-1. User opens the application.
-2. User enters username and password.
-3. Frontend receives the registration request.
-4. Frontend sends the request to the Auth Service.
-5. Auth Service validates the request.
-6. Auth Service stores the user in MySQL.
-7. Auth Service returns the result to the Frontend.
-8. Frontend displays the result to the user.
-```
-
-### User Login
-
-```text
-1. User enters email and password.
-2. Frontend sends the credentials to the Auth Service.
-3. Auth Service checks MySQL.
-4. Credentials are validated.
-5. Auth Service returns the authentication result.
-6. Frontend allows the user to access the main application page.
-```
-
----
-
-## 9. API Endpoints
-
-The exact endpoints should match the implementation in each service.
-
-### Auth Service
-
-Typical endpoints:
-
-| Method | Endpoint  | Description                   |
-| ------ | --------- | ------------------------------ |
-| POST   | `/signup` | Create a new user             |
-| POST   | `/login`  | Authenticate an existing user |
-
-Example signup request:
-
-```json
-{
-  "username": "john@example.com",
-  "password": "********"
-}
-```
-
-Example login request:
-
-```json
-{
-  "username": "john@example.com",
-  "password": "********"
-}
-```
-
-### Roadmap Service
-
-Typical endpoints:
-
-| Method | Endpoint   | Description                  |
-| ------ | ---------- | ------------------------------ |
-| GET    | `/roadmap` | Retrieve roadmap information |
-| GET    | `/health`  | Service health check         |
-
-> Update this section if the actual API paths differ.
-
----
-
-## 10. Ports
-
-The following table should be kept synchronized with the application configuration.
-
-| Component       |                     Port | Protocol | Purpose              |
-| --------------- | ------------------------: | -------- | --------------------- |
-| Frontend        |                    `3000` | HTTP     | Web application      |
-| Auth Service    |                    `5000` | HTTP     | Authentication API   |
-| Roadmap Service |                    `8080` | HTTP     | Roadmap API          |
-| MySQL           |                    `3306` | TCP      | User database        |
-
----
-
-## 11. Environment Variables
-
-Configuration should be provided through environment variables instead of hardcoding values into the application.
-
-### Frontend
-
-```text
-AUTH_SERVICE_URL=<AUTH_SERVICE_URL>
-ROADMAP_SERVICE_URL=<ROADMAP_SERVICE_URL>
-```
-
-### Auth Service
-
-```text
-DB_HOST=<MYSQL_HOST>
-DB_PORT=<MYSQL_PORT>
-DB_NAME=<MYSQL_DATABASE>
-DB_USERNAME=<MYSQL_USERNAME>
-DB_PASSWORD=<MYSQL_PASSWORD>
-```
-
----
-
-## 12. Docker
-
-Each microservice has its own Dockerfile.
-
-The services are designed to be containerized independently.
-
-Example repository structure:
-
-```text
-project/
-│
-├── frontend/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── server.js
-│   └── ...
-│
-├── auth-service/
-│   ├── Dockerfile
-│   ├── pom.xml
-│   └── ...
-│
-├── roadmap-service/
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── ...
-│
-└── README.md
-```
-
-Each Dockerfile is responsible for:
-
-1. Selecting the required base image.
-2. Installing application dependencies.
-3. Copying the application source code.
-4. Configuring the application.
-5. Exposing the required application port.
-6. Starting the microservice.
-
-### Building an Image
-
-From a service directory:
-
-```bash
-docker build -t <service-name>:latest .
-```
-
-Example:
-
-```bash
-cd frontend
-docker build -t frontend:latest .
-```
-
-The same approach can be used for the other services.
-
----
-
-## 13. Running the Services Independently
-
-Because the services are independent, each service can be built and run separately.
-
-Example:
-
-```bash
-docker build -t frontend:latest ./frontend
-docker build -t auth-service:latest ./auth-service
-docker build -t roadmap-service:latest ./roadmap-service
-```
-
-When running the containers, provide the required environment variables.
-
-Example:
-
-```bash
-docker run \
-  -p <FRONTEND_PORT>:<FRONTEND_PORT> \
-  -e AUTH_SERVICE_URL=<AUTH_SERVICE_URL> \
-  -e ROADMAP_SERVICE_URL=<ROADMAP_SERVICE_URL> \
-  frontend:latest
-```
-
-Database services must be available before starting the microservices that depend on them.
-
----
-
-## 14. Repository Structure
-
-The repository is organized by microservice.
-
-```text
 .
-├── frontend/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── server.js
-│   ├── public/
-│   │   └── css/
-│   │       └── style.css
-│   └── views/
-│       ├── auth.ejs
-│       ├── error.ejs
-│       └── roadmap.ejs
-│
-├── auth-service/
-│   ├── Dockerfile
-│   └── ...
-│
-├── roadmap-service/
-│   ├── Dockerfile
-│   └── ...
-│
-└── README.md
+├── frontend/                  # Node.js frontend service
+│   └── Dockerfile
+├── auth-service/               # Python/Flask authentication service
+│   └── Dockerfile
+├── roadmap-service/             # Java/Spring roadmap service
+│   └── Dockerfile
+├── docker-compose.yml            # Local development stack
+├── terraform/                     # Infrastructure as Code
+│   ├── main.tf
+│   ├── providers.tf                # Azure Blob remote backend
+│   └── modules/
+│       ├── network/                  # VNet + Subnet
+│       ├── acr/                       # Azure Container Registry
+│       └── aks/                        # AKS cluster + AcrPull role binding
+├── k8s/                                # Kubernetes manifests (GitOps source of truth)
+│   ├── namespace-storage.yaml            # Namespace + Azure Disk StorageClass
+│   ├── keyvault-provider.yaml             # SecretProviderClass (Key Vault CSI)
+│   ├── mysql-statefulset.yaml              # MySQL StatefulSet + Headless Service
+│   ├── configmap.yaml                       # Shared environment configuration
+│   ├── auth-service.yaml                     # Auth Deployment + Service
+│   ├── roadmap-service.yaml                   # Roadmap Deployment + Service
+│   ├── frontend-service.yaml                   # Frontend Deployment + Service
+│   └── ingress.yaml                              # NGINX Ingress rules
+├── argo-app.yaml                                  # ArgoCD Application definition
+├──  screenshots/                                 # Proof-of-work screenshots (see below)
+└── .github/
+    └── workflows/
+        └── ci.yml                                      # CI pipeline definition
 ```
 
 ---
-=======
-# CloudDevOpsProject
->>>>>>> 507db55b0772eca81d21b5c83abfe19fe2bc1bcc
+
+## 🧩 Services
+
+| Service            | Tech               | Responsibility                                  | Port  |
+|----------------------|----------------------|---------------------------------------------------|-------|
+| **Frontend**           | Node.js / Express      | Web UI, routes requests to backend services         | 3000  |
+| **Auth Service**        | Python / Flask           | User signup/login, credential validation             | 5000  |
+| **Roadmap Service**       | Java / Spring Boot         | Serves the core DevOps roadmap application data       | 8080  |
+| **MySQL**                  | MySQL 8.0                     | Persistent user data storage (StatefulSet)              | 3306  |
+
+Services communicate over the cluster's internal DNS. The frontend never talks to MySQL directly — all data access goes through the backend services, keeping a clean separation of concerns.
+
+---
+
+## 🏗 Infrastructure (Terraform)
+
+Infrastructure is fully codified and modular:
+
+- **`network` module** — provisions a dedicated VNet and Subnet for the cluster.
+- **`acr` module** — provisions Azure Container Registry to store built images.
+- **`aks` module** — provisions the AKS cluster (2 nodes, `Standard_D2s_v3`), assigns a `SystemAssigned` managed identity, and grants it the **AcrPull** role on the registry — no static credentials involved in image pulls.
+- **Remote state** — the Terraform state is stored remotely in an **Azure Blob Storage** backend (not committed to Git), enabling safe collaboration and preventing state drift/loss.
+
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply -auto-approve
+```
+
+---
+
+## 🔐 Security
+
+Security wasn't an afterthought — it's built into every layer:
+
+- **No plaintext secrets anywhere.** Database credentials live in **Azure Key Vault** and are mounted into pods via the **Secrets Store CSI Driver**, exposed to the cluster only as a synced Kubernetes Secret — never committed to the repo, never in a ConfigMap.
+- **Least-privilege identity access.** The AKS cluster's managed identity is granted only the specific RBAC roles it needs (`AcrPull` on the registry, `Key Vault Secrets User` on the vault) — no shared credentials, no service principal secrets floating around.
+- **Vulnerability scanning in CI.** Every image is scanned with **Trivy** for `CRITICAL`/`HIGH` CVEs before being pushed to the registry.
+- **Hardened Dockerfiles:**
+  - All containers run as **non-root users**.
+  - **Multi-stage builds** (Java service) keep the final image lean and dependency-cache-optimized.
+  - `.dockerignore` files exclude build artifacts, `node_modules`, `__pycache__`, and `.env` files from build context.
+- **Isolated remote Terraform state**, separate from application infrastructure, stored in its own resource group.
+
+---
+
+## ⚙️ CI Pipeline (GitHub Actions)
+
+On every push to `main` (excluding changes to `terraform/`, `k8s/`, and docs — to avoid pipeline loops), the pipeline:
+
+1. **Authenticates** to Azure using federated credentials (`AZURE_CREDENTIALS` secret).
+2. **Builds** each service's Docker image.
+3. **Scans** each image with **Trivy** for known vulnerabilities.
+4. **Pushes** the image to ACR, tagged with the Git commit SHA (`${{ github.sha }}`) — never `latest` — so every deployed version is traceable back to an exact commit.
+5. **Updates the Kubernetes manifests** in `k8s/` with the new image tags and pushes that change back to the repo.
+
+This last step is what closes the loop with ArgoCD — the CI pipeline never touches the cluster directly; it only updates the *desired state* in Git.
+
+---
+
+## 🔁 CD / GitOps (ArgoCD)
+
+ArgoCD continuously watches the `k8s/` directory of this repo and reconciles the live cluster state against it:
+
+- **Automated sync** — any change pushed to `k8s/` (by the CI pipeline or manually) is picked up and applied automatically.
+- **Self-heal** — if someone manually changes something in the cluster (drift), ArgoCD reverts it back to match Git.
+- **Pruning** — resources removed from the manifests are automatically removed from the cluster.
+
+This means the Git repository is the **single source of truth** for what's running in production — a core GitOps principle.
+
+---
+
+## 📊 Observability Stack
+
+Deployed on the cluster (namespace: `monitoring`) via Helm:
+
+| Component     | Purpose                                                         |
+|----------------|---------------------------------------------------------------------|
+| **Prometheus**   | Scrapes metrics from nodes, pods, and cluster components               |
+| **Grafana**       | Unified dashboards for metrics + logs (pre-built Kubernetes dashboards) |
+| **Loki + Promtail** | Centralized log aggregation across all pods, queryable via LogQL     |
+| **Jaeger**          | Distributed tracing backend — deployed and reachable; full auto-instrumentation via the OpenTelemetry Operator is a work in progress |
+
+Grafana ships with pre-built dashboards for pod-level CPU/memory/network usage, and Loki is wired in as a data source for live log exploration by namespace and container.
+
+---
+
+## 💻 Local Development
+
+The full stack can be run locally with Docker Compose for fast iteration before touching the cloud:
+
+```bash
+docker-compose up -d --build
+```
+
+This spins up MySQL, Auth Service, Roadmap Service, and Frontend, wired together with the same environment variable contracts used in the Kubernetes manifests — so behavior stays consistent between local and cloud environments.
+
+---
+
+## 🚀 Deployment Guide
+
+```bash
+# 1. Provision infrastructure
+cd terraform
+terraform init
+terraform apply -auto-approve
+
+# 2. Connect kubectl to the new cluster
+az aks get-credentials --resource-group <rg-name> --name <aks-name>
+
+# 3. Bootstrap the cluster
+kubectl apply -f k8s/namespace-storage.yaml
+kubectl apply -f k8s/keyvault-provider.yaml
+kubectl apply -f k8s/mysql-statefulset.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/auth-service.yaml
+kubectl apply -f k8s/roadmap-service.yaml
+kubectl apply -f k8s/frontend-service.yaml
+kubectl apply -f k8s/ingress.yaml
+
+# 4. Install ArgoCD and hand off deployment management to it
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -f argo-app.yaml
+```
+
+From this point on, deployments are managed entirely through Git — push a change, ArgoCD syncs it.
+
+---
+
+## 📸 Screenshots / Proof of Work
+
+All screenshots live in [`screenshots/`](./screenshots). Suggested naming and what each one demonstrates:
+
+| File                          | What it shows                                                                 |
+|---------------------------------|-----------------------------------------------------------------------------------|
+| `01-argocd-healthy-synced.png`    | ArgoCD Application — `Healthy` & `Synced`, GitOps loop confirmed end-to-end        |
+| `02-app-live-ingress.png`           | The application running live, reached through the public Ingress IP                 |
+| `03-grafana-k8s-dashboard.png`        | Grafana's Kubernetes Compute Resources dashboard — pod memory/network metrics       |
+| `04-grafana-loki-logs.png`               | Grafana Explore — live application logs queried via Loki (LogQL, namespace filter)   |
+| `05-kubectl-cluster-state.png`             | Terminal output — all pods/services healthy across `ivolve`, `ingress-nginx`, `monitoring` |
+| `06-azure-keyvault-secrets.png`              | Azure Key Vault — `mysql-password` secret, never stored in Git                          |
+| `07-azure-acr-repositories.png`                | Azure Container Registry — pushed images for all three services                          |
+| `08-azure-resource-group.png`                    | Azure Resource Group — full provisioned infrastructure (AKS, ACR, VNet, Key Vault, etc.) |
+| `09-azure-tfstate-blob.png`                        | Azure Blob Storage — remote Terraform state, safely stored outside the repo               |
+| `10-github-actions-runs.png`                         | GitHub Actions — CI pipeline run history, all green                                        |
+
+---
+
+## 🧩 Engineering Challenges & Fixes
+
+A few real problems hit during the build — documenting them here because working through them was half the value of the project:
+
+| Problem | Root Cause | Fix |
+|---|---|---|
+| `ServiceCidrOverlapExistingSubnetsCidr` on `terraform apply` | AKS's default service CIDR (`10.0.0.0/16`) overlapped with the VNet's own address space | Explicitly set a non-overlapping `service_cidr` (`10.1.0.0/16`) in the AKS `network_profile` |
+| `RequestDisallowedByAzure` creating the Storage Account | Subscription policy restricted resource creation in `eastus` | Re-created the backend storage account in `switzerlandnorth`, matching the rest of the infrastructure |
+| `ForbiddenByRbac` writing to Key Vault | Key Vault used RBAC authorization mode — vault creation doesn't grant access by default | Explicitly assigned `Key Vault Secrets Officer` (self) and `Key Vault Secrets User` (AKS managed identity) roles |
+| App failing with `Missing database environment variables: DB_USER` | Mismatch between the variable names in the app code and the ones set in `docker-compose.yml`/manifests | Traced the actual env var the app read from source and aligned the Compose/K8s config to match |
+| Ingress never got a public IP | No Ingress Controller was installed — the `Ingress` resource alone is just a routing spec, not a load balancer | Installed the NGINX Ingress Controller, which provisions the actual Azure Load Balancer + public IP |
+| OpenTelemetry Collector stuck in `CrashLoopBackOff` | The default Operator-managed Collector image version had a config-parsing incompatibility | Pinned an older, stable Collector image version — later removed pending a cleaner instrumentation pass |
+| `git push` hanging at ~90% | Terraform provider binaries (`.terraform/`) were being committed — hundreds of MBs | Added `.gitignore`, purged the binaries from the last commit with `git rm -r --cached`, and reset history before the bloated commit |
+
+---
+
+## 🗺 Roadmap / Future Improvements
+
+Things I'd add next to push this further toward true production-readiness:
+
+- [ ] **Complete OpenTelemetry auto-instrumentation** end-to-end so Jaeger shows real request traces across Frontend → Auth → Roadmap
+- [ ] **SonarCloud** integration in CI for static code quality/security analysis (SAST)
+- [ ] **checkov / tfsec** in CI to scan Terraform code for misconfigurations before `apply`
+- [ ] **NetworkPolicies** to restrict pod-to-pod traffic by default (currently open within the cluster)
+- [ ] **HTTPS via cert-manager + Let's Encrypt** on the Ingress, instead of plain HTTP
+- [ ] **Backup & Disaster Recovery** for the MySQL StatefulSet (e.g., Velero-based volume snapshots)
+
+---
+
+## 👤 Author
+
+**Mazen Hassan**
+Cloud / DevSecOps Engineer — Electronics & Electrical Communications Engineering, Tanta University
+GitHub: [@mazenhassan20](https://github.com/mazenhassan20)
+
+---
+
+> This project was built independently as a hands-on learning exercise — not affiliated with, or submitted as part of, any bootcamp or graduation requirement. Every design decision, bug, and fix documented here reflects real, self-directed engineering work.
